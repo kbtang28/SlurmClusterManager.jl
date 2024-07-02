@@ -87,10 +87,13 @@ function launch(manager::SlurmManager, params::Dict, instances_arr::Array, c::Co
         # wait to make sure that srun_proc exits before main program to avoid slurm complaining
         # avoids "Job step aborted: Waiting up to 32 seconds for job step to finish" message
         finalizer(manager) do manager
-          wait(manager.srun_proc)
-          # need to sleep briefly here to make sure that srun exit is recorded by slurm daemons
-          # TODO find a way to wait on the condition directly instead of just sleeping
-          sleep(manager.srun_post_exit_sleep)
+          # fix finalizer; see GitHub issue: kleinhenz/SlurmClusterManager.jl#11
+          @async begin
+            wait(manager.srun_proc)
+            # need to sleep briefly here to make sure that srun exit is recorded by slurm daemons
+            # TODO find a way to wait on the condition directly instead of just sleeping
+            sleep(manager.srun_post_exit_sleep)
+          end
         end
 
     catch e
